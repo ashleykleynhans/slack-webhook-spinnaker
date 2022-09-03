@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import sys
 import argparse
 import yaml
@@ -101,7 +102,7 @@ def internal_server_error(error):
             'msg': 'Internal Server Error',
             'detail': str(error)
         }
-    ), 404)
+    ), 500)
 
 
 @app.route('/')
@@ -121,9 +122,38 @@ def webhook_handler():
     slack_channel = slack_channel[1:]
     telegram_channels = config['telegram']['channels']
     channel_mapping = config['channel_mapping']
-    telegram_channel_name = channel_mapping[slack_channel]
-    telegram_chat_id = telegram_channels[telegram_channel_name]
+
+    if slack_channel in channel_mapping:
+        telegram_channel_name = channel_mapping[slack_channel]
+    else:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': f'Slack channel {slack_channel} not found in channel_mapping config'
+            }
+        ), 404)
+
+    if telegram_channel_name in telegram_channels:
+        telegram_chat_id = telegram_channels[telegram_channel_name]
+    else:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': f'Telegram channel name {telegram_channel_name} not found in telegram channel config'
+            }
+        ), 404)
+
     telegram_response = send_telegram_notification(telegram_chat_id, slack_payload)
+
+    if not telegram_response['ok']:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': f'Failed to send Telegram notification to chat id: {telegram_chat_id}',
+                'detail': telegram_response
+            }
+        ), 500)
+
     return jsonify(telegram_response)
 
 
