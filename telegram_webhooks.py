@@ -57,10 +57,13 @@ def substitute_hyperlinks(text):
 def send_telegram_notification(chat_id, slack_payload):
     telegram_bot_token = config['telegram']['bot_token']
     attachment = slack_payload['attachments'][0]
-    title = substitute_hyperlinks(attachment['title'])
-    text = substitute_hyperlinks(attachment['text'])
+    msg_txt = ''
 
-    msg_txt = f'<b>{title}</b>\n'
+    if 'title' in attachment.keys():
+        title = substitute_hyperlinks(attachment['title'])
+        msg_txt += f'<b>{title}</b>\n'
+
+    text = substitute_hyperlinks(attachment['fallback'])
     msg_txt += f'{text}'
 
     msg_data = {
