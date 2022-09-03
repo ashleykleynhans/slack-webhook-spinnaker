@@ -84,8 +84,12 @@ previous bullet point.
 
 ## Spinnaker Configuration
 
-```
-TODO
+Assuming you are using [Halyard](https://github.com/spinnaker/halyard) to
+manage your Spinnaker deployment:
+```bash
+hal config notification slack edit \
+  --base-url https://1d602d00.execute-api.us-east-1.amazonaws.com/production \
+  --force-use-incoming-webhook
 ```
 
 ## Testing your Webhook
