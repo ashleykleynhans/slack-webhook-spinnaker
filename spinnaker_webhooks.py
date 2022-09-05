@@ -66,23 +66,16 @@ def send_discord_notification(channel_id, slack_payload):
 
     text = substitute_hyperlinks(attachment['fallback'])
     msg_txt += f'{text}'
-
-    headers = {
-        'Authorization': f'Bot {discord_bot_token}'
-    }
-
-    payload = {
-        'content': msg_txt
-    }
-
     bot_url = f'https://discordapp.com/api/channels/{channel_id}/messages'
-    print(f'channel id: {channel_id}')
-    print(f'bot url: {bot_url}')
 
     req = requests.post(
-        headers=headers,
         url=bot_url,
-        data=payload
+        headers={
+            'Authorization': f'Bot {discord_bot_token}'
+        },
+        data={
+            'content': msg_txt
+        }
     )
 
     return req
@@ -97,17 +90,19 @@ def send_telegram_notification(chat_id, slack_payload):
         title = substitute_hyperlinks(attachment['title'])
         msg_txt += f'<b>{title}</b>\n'
 
+    bot_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage'
     text = substitute_hyperlinks(attachment['fallback'])
     msg_txt += f'{text}'
 
-    msg_data = {
-        'chat_id': chat_id,
-        'parse_mode': 'html',
-        'text': msg_txt
-    }
+    req = requests.post(
+        url=bot_url,
+        data={
+            'chat_id': chat_id,
+            'parse_mode': 'html',
+            'text': msg_txt
+        }
+    )
 
-    bot_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage'
-    req = requests.post(url=bot_url, data=msg_data)
     return req
 
 
