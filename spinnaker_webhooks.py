@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 import sys
 import argparse
 import yaml
@@ -40,7 +39,7 @@ def load_config():
         sys.exit()
 
 
-def substitute_hyperlinks(text):
+def substitute_hyperlinks(text, link_format='html'):
     pattern = '(<(https?:\/\/.*?)\|(.*?)>)'
     matches = re.findall(pattern, text)
 
@@ -49,33 +48,90 @@ def substitute_hyperlinks(text):
             link_original = match[0]
             link_actual = match[1]
             link_text = match[2]
-            link_new = f'<a href="{link_actual}">{link_text}</a>'
+
+            if link_format == 'html':
+                link_new = f'<a href="{link_actual}">{link_text}</a>'
+            elif link_format == 'markdown':
+                link_new = f'[{link_text}]({link_actual})'
+            else:
+                raise Exception(f'Unsupported link format: {link_format}')
+
             text = text.replace(link_original, link_new)
 
     return text
 
 
 def send_discord_notification(channel_id, slack_payload):
+    color_map = {
+        'green': '#008000',
+        'gray': '#808080',
+        'red': '#FF0000',
+        'blue': '#0000FF',
+        'black': '#000000',
+        'yellow': '#FFFF00',
+        'maroon': '#800000',
+        'purple': '#800080',
+        'olive': '#808000',
+        'silver': '#C0C0C0',
+        'gold': '#FFD700',
+        'pink': '#FFC0CB',
+        'coral': '#FF7F50',
+        'brown': '#A52A2A',
+        'indigo': '#4B0082',
+        'aqua': '#00FFFF',
+        'cyan': '#00FFFF',
+        'lime': '#00FF00',
+        'teal': '#008080',
+        'navy': '#000080',
+        'sienna': '#A0522D',
+        'good': '#2EB67D',
+        'warning': '#ECB22E',
+        'danger': '#E01E5A',
+    }
+
+    bot_url = f'https://discordapp.com/api/channels/{channel_id}/messages'
     discord_bot_token = config['discord']['bot_token']
     attachment = slack_payload['attachments'][0]
-    msg_txt = ''
+    title = color = ''
 
     if 'title' in attachment.keys():
         title = substitute_hyperlinks(attachment['title'])
-        msg_txt += f'<b>{title}</b>\n'
 
-    text = substitute_hyperlinks(attachment['fallback'])
-    msg_txt += f'{text}'
-    bot_url = f'https://discordapp.com/api/channels/{channel_id}/messages'
+    if 'color' in attachment.keys() and attachment['color'] in color_map:
+        color = color_map[attachment['color']]
+        color = color[1:]
+        color = int(color, 16)
+
+    description = substitute_hyperlinks(attachment['fallback'], 'markdown')
+
+    if 'icon_emoji' in slack_payload and slack_payload['icon_emoji'] == ':jenkins:':
+        icon_url = 'https://camo.githubusercontent.com/0a16218f80a1832b5244500de2367b6985e2077efc4cd1f0c71dc38a4a348740/68747470733a2f2f6a656e6b696e732e696f2f696d616765732f6c6f676f732f6a656e6b696e732f6a656e6b696e732e706e67'
+        icon_type = 'Jenkins'
+    else:
+        icon_url = 'https://avatars0.githubusercontent.com/u/7634182?s=200&v=4'
+        icon_type = 'Spinnaker'
+
+    payload = {
+        'embeds': [
+            {
+                'title': title,
+                'type': 'rich',
+                'description': description,
+                'color': color,
+                'author': {
+                    'name': icon_type,
+                    'icon_url': icon_url
+                }
+            }
+        ]
+    }
 
     req = requests.post(
         url=bot_url,
         headers={
             'Authorization': f'Bot {discord_bot_token}'
         },
-        data={
-            'content': msg_txt
-        }
+        json=payload
     )
 
     return req
@@ -83,6 +139,7 @@ def send_discord_notification(channel_id, slack_payload):
 
 def send_telegram_notification(chat_id, slack_payload):
     telegram_bot_token = config['telegram']['bot_token']
+    bot_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage'
     attachment = slack_payload['attachments'][0]
     msg_txt = ''
 
@@ -90,7 +147,6 @@ def send_telegram_notification(chat_id, slack_payload):
         title = substitute_hyperlinks(attachment['title'])
         msg_txt += f'<b>{title}</b>\n'
 
-    bot_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage'
     text = substitute_hyperlinks(attachment['fallback'])
     msg_txt += f'{text}'
 
