@@ -16,7 +16,7 @@ to various different kinds of applications through the [Echo](
 https://github.com/spinnaker/echo) microservice.
 
 However,  [Echo](https://github.com/spinnaker/echo) does not currently support sending
-notifications to various different platforms such as Discord or Telegram.
+notifications to various different platforms such as Discord, Telegram or Webex.
 
 [Echo](https://github.com/spinnaker/echo) supports a REST webhook receiver, but every
 single event, including Igor health checks get sent to the webhook, so it becomes
