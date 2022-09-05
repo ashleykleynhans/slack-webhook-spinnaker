@@ -135,15 +135,14 @@ def send_discord_notification(channel_id, slack_payload):
     if color:
         payload['embeds'][0]['color'] = color
 
-    req = requests.post(
+    return requests.post(
         url=bot_url,
         headers={
+            'Content-Type': 'application/json',
             'Authorization': f'Bot {discord_bot_token}'
         },
         json=payload
     )
-
-    return req
 
 
 def send_telegram_notification(chat_id, slack_payload):
@@ -159,7 +158,7 @@ def send_telegram_notification(chat_id, slack_payload):
     text = substitute_hyperlinks(attachment['fallback'])
     msg_txt += f'{text}'
 
-    req = requests.post(
+    return requests.post(
         url=bot_url,
         data={
             'chat_id': chat_id,
@@ -168,7 +167,16 @@ def send_telegram_notification(chat_id, slack_payload):
         }
     )
 
-    return req
+
+def send_slack_notification(slack_payload):
+    return requests.post(
+        url='https://slack.com/api/chat.postMessage',
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {slack_token}'
+        },
+        json=slack_payload
+    )
 
 
 def discord_handler():
@@ -276,6 +284,23 @@ def telegram_handler():
     return jsonify(telegram_response)
 
 
+def slack_handler():
+    slack_payload = request.get_json()
+    response = send_slack_notification(slack_payload)
+    slack_response = response.json()
+
+    if response.status_code != 200:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': 'Failed to send Slack notification',
+                'detail': slack_response
+            }
+        ), 500)
+
+    return jsonify(slack_response)
+
+
 config = load_config()
 
 if 'slack' not in config:
@@ -335,6 +360,8 @@ def webhook_handler():
         return telegram_handler()
     elif config['target'] == 'discord':
         return discord_handler()
+    elif config['target'] == 'slack':
+        return slack_handler()
     else:
         return make_response(jsonify(
             {
@@ -352,7 +379,8 @@ if __name__ == '__main__':
         target = config['target']
 
         if target != 'discord' and \
-                target != 'telegram':
+                target != 'telegram' and \
+                target != 'slack':
             print(f'Unsupported target notification platform: {target}')
             sys.exit(1)
         else:

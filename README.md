@@ -96,7 +96,9 @@ telegram:
    and add the bot to your Discord server.
 2. Create your Discord text channels where you want to receive your Spinnaker
    notifications.
-3. Get the list of your Discord channel id's ----->
+3. Get the list of your Discord channel id's by going to `Discord Settings`, then `Advanced`
+   and toggling `Developer Mode` to `ENABLED`, and then right-clicking on each of your
+   channels and clicking `Copy ID`.
 4. Create a configuration file called `config.yml` in the same directory
    as the webhook script that looks like this:
 ```yml
@@ -119,6 +121,20 @@ discord:
   are configured in the application that will be posting data to the webhook receiver, and
   the Discord channel id(s) need to be the Discord channel id(s) that you obtain in point
   (3) above.
+
+### Slack prerequisites
+
+1. [Create a new Slack App](https://api.slack.com/start).
+2. Create your Slack channels where you want to receive your Spinnaker notifications.
+3. Configure Spinnaker to send notifications to those channels.
+4. Create a configuration file called `config.yml` in the same directory
+   as the webhook script that looks like this:
+```yml
+---
+target: slack
+slack:
+  token: "<SLACK_TOKEN>"
+```
 
 ## Spinnaker Configuration
 
