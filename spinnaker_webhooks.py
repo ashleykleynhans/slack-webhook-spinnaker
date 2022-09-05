@@ -7,6 +7,13 @@ import requests
 from flask import Flask, request, jsonify, make_response
 
 
+SUPPORTED_PLATFORMS = [
+    'discord',
+    'slack',
+    'telegram',
+    'webex'
+]
+
 def get_args():
     parser = argparse.ArgumentParser(
         description='Slack Compatible API Webhook Receiver to Send Telegram Notifications'
@@ -179,6 +186,31 @@ def send_slack_notification(slack_payload):
     )
 
 
+def send_webex_notification(room_id, slack_payload):
+    webex_bot_token = config['webex']['bot_token']
+    bot_url = 'https://webexapis.com/v1/messages'
+    attachment = slack_payload['attachments'][0]
+    msg_txt = ''
+
+    if 'title' in attachment.keys():
+        title = substitute_hyperlinks(attachment['title'], 'markdown')
+        msg_txt += f'**{title}**\n'
+
+    text = substitute_hyperlinks(attachment['fallback'], 'markdown')
+    msg_txt += f'{text}'
+
+    return requests.post(
+        url=bot_url,
+        headers={
+            'Authorization': f'Bearer {webex_bot_token}'
+        },
+        data={
+            'roomId': room_id,
+            'markdown': msg_txt
+        }
+    )
+
+
 def discord_handler():
     if 'discord' not in config:
         return make_response(jsonify(
@@ -270,7 +302,6 @@ def telegram_handler():
 
     response = send_telegram_notification(telegram_chat_id, slack_payload)
     telegram_response = response.json()
-    print(f'status code: {response.status_code}')
 
     if response.status_code != 200 or not telegram_response['ok']:
         return make_response(jsonify(
@@ -282,6 +313,62 @@ def telegram_handler():
         ), 500)
 
     return jsonify(telegram_response)
+
+
+def webex_handler():
+    if 'webex' not in config:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': "'webex' section not found in config"
+            }
+        ), 404)
+
+    if 'channel_mapping' not in config['webex']:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': "'channel_mapping' section not found in 'webex' section of config"
+            }
+        ), 404)
+
+    if 'bot_token' not in config['webex']:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': "'bot_token' section not found in 'webex' section of config"
+            }
+        ), 404)
+
+    slack_payload = request.get_json()
+    slack_channel = slack_payload['channel']
+    # Drop the # prefix from the slack channel
+    slack_channel = slack_channel[1:]
+    channel_mapping = config['webex']['channel_mapping']
+
+    if slack_channel in channel_mapping:
+        webex_room_id = channel_mapping[slack_channel]
+    else:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': f'Slack channel {slack_channel} not found in channel_mapping config'
+            }
+        ), 404)
+
+    response = send_webex_notification(webex_room_id, slack_payload)
+    webex_response = response.json()
+
+    if response.status_code != 200:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': f'Failed to send Webex notification to room id: {webex_room_id}',
+                'detail': webex_response
+            }
+        ), 500)
+
+    return jsonify(webex_response)
 
 
 def slack_handler():
@@ -362,6 +449,8 @@ def webhook_handler():
         return discord_handler()
     elif config['target'] == 'slack':
         return slack_handler()
+    elif config['target'] == 'webex':
+        return webex_handler()
     else:
         return make_response(jsonify(
             {
@@ -378,9 +467,7 @@ if __name__ == '__main__':
     if 'target' in config:
         target = config['target']
 
-        if target != 'discord' and \
-                target != 'telegram' and \
-                target != 'slack':
+        if target not in SUPPORTED_PLATFORMS:
             print(f'Unsupported target notification platform: {target}')
             sys.exit(1)
         else:

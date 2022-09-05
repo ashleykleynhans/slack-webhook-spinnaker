@@ -4,9 +4,10 @@
 
 The following platforms are currently supported:
 
-* Slack
 * Discord
+* Slack
 * Telegram
+* Webex
 
 ## Background
 
@@ -135,6 +136,46 @@ target: slack
 slack:
   token: "<SLACK_TOKEN>"
 ```
+
+### Webex prerequisites
+
+1. [Create a new Webex App](https://developer.webex.com/my-apps).
+2. Take note of your Bot token and the bot email address.
+3. Create your spaces/rooms where you want to receive your Spinnaker notifications.
+4. Add your bot to each of the spaces/rooms where you want to receive your Spinnaker
+   notifications by inviting it by the email address you noted down in point (2).
+5. Configure Spinnaker to send notifications to those spaces/rooms.
+6. Get your room id(s) by running the following curl command:
+```bash
+curl -s -X GET \
+  -H "Authorization: Bearer <INSERT_BOT_TOKEN" \
+  https://webexapis.com/v1/memberships | jq
+```
+* This assumes you have `jq` installed. Omit the `| jq` part of the command if you
+  don't have it installed and paste the JSON into a [JSON formatter](
+  https://jsonformatter.curiousconcept.com/).
+7. Create a configuration file called `config.yml` in the same directory
+   as the webhook script that looks like this:
+```yml
+---
+target: webex
+slack:
+  token: "<SLACK_TOKEN>"
+webex:
+  bot_token: "<WEBEX_BOT_TOKEN>"
+  channel_mapping:
+    some-slack-channel: <SOME_ROOM_ID>
+    another-slack-channel: <ANOTHER_ROOM_ID>
+```
+* The Slack token can be anything, whatever you enter here needs to be configured
+  as the token in the application that will be configured to send webhooks to the Slack
+  webhook receiver.
+* The Webex bot token needs to be a valid Webex bot token so that the webhook
+  can send the notifications to Webex (see point 1 and 2 above).
+* The Slack channels under `channel_mapping` need to be valid Slack channel names that
+  are configured in the application that will be posting data to the webhook receiver, and
+  the Webex room id(s) need to be the Webex channel id(s) that you obtain in point
+  (3) above.
 
 ## Spinnaker Configuration
 
