@@ -92,15 +92,22 @@ def send_discord_notification(channel_id, slack_payload):
     bot_url = f'https://discordapp.com/api/channels/{channel_id}/messages'
     discord_bot_token = config['discord']['bot_token']
     attachment = slack_payload['attachments'][0]
-    title = color = ''
 
     if 'title' in attachment.keys():
         title = substitute_hyperlinks(attachment['title'])
+    else:
+        title = ''
 
-    if 'color' in attachment.keys() and attachment['color'] in color_map:
-        color = color_map[attachment['color']]
+    if 'color' in attachment.keys():
+        if attachment['color'] in color_map:
+            color = color_map[attachment['color']]
+        else:
+            color = attachment['color']
+
         color = color[1:]
         color = int(color, 16)
+    else:
+        color = None
 
     description = substitute_hyperlinks(attachment['fallback'], 'markdown')
 
@@ -117,7 +124,6 @@ def send_discord_notification(channel_id, slack_payload):
                 'title': title,
                 'type': 'rich',
                 'description': description,
-                'color': color,
                 'author': {
                     'name': icon_type,
                     'icon_url': icon_url
@@ -125,6 +131,9 @@ def send_discord_notification(channel_id, slack_payload):
             }
         ]
     }
+
+    if color:
+        payload['embeds'][0]['color'] = color
 
     req = requests.post(
         url=bot_url,
