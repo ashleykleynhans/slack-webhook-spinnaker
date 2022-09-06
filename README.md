@@ -109,6 +109,16 @@ slack:
   token: "<SLACK_TOKEN>"
 discord:
   bot_token: "<DISCORD_BOT_TOKEN>"
+  authors:
+    jenkins:
+      name: Jenkins
+      icon_url: https://example.com/jenkins-icon.png
+    spinnaker:
+      name: Spinnaker
+      icon_url: https://example.com/spinnaker-logo-png
+    python:
+      name: Python
+      icon_url: https://dexample.com/python-logo.png
   channel_mapping:
     some-slack-channel: <SOME_CHANNEL_ID>
     another-slack-channel: <ANOTHER_CHANNEL_ID>
@@ -116,6 +126,10 @@ discord:
 * The Slack token can be anything, whatever you enter here needs to be configured
   as the token in the application that will be configured to send webhooks to the Slack
   webhook receiver.
+* The `authors` section is optional, the author will default to `Spinnaker` if this is
+not set, otherwise the author details are used to look up the author of the `icon_emoji`
+field in the Slack payload, eg. `"icon_emoji: ":jenkins:"` will use the `name` and
+`icon_url` for the `jenkins` author.
 * The Discord bot token needs to be a valid Discord bot token so that the webhook
   can send the notifications to Discord (see point 1 above).
 * The Slack channels under `channel_mapping` need to be valid Slack channel names that

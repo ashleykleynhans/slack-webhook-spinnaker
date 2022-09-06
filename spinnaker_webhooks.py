@@ -117,13 +117,17 @@ def send_discord_notification(channel_id, slack_payload):
         color = None
 
     description = substitute_hyperlinks(attachment['fallback'], 'markdown')
+    icon_url = 'https://avatars0.githubusercontent.com/u/7634182?s=200&v=4'
+    icon_type = 'Spinnaker'
 
-    if 'icon_emoji' in slack_payload and slack_payload['icon_emoji'] == ':jenkins:':
-        icon_url = 'https://camo.githubusercontent.com/0a16218f80a1832b5244500de2367b6985e2077efc4cd1f0c71dc38a4a348740/68747470733a2f2f6a656e6b696e732e696f2f696d616765732f6c6f676f732f6a656e6b696e732f6a656e6b696e732e706e67'
-        icon_type = 'Jenkins'
-    else:
-        icon_url = 'https://avatars0.githubusercontent.com/u/7634182?s=200&v=4'
-        icon_type = 'Spinnaker'
+    if 'icon_emoji' in slack_payload and 'authors' in config['discord']:
+        authors = config['discord']['authors']
+        icon_emoji = slack_payload['icon_emoji'].replace(':', '')
+
+        if icon_emoji in authors:
+            author = authors[icon_emoji]
+            icon_url = author['icon_url']
+            icon_type = author['name']
 
     payload = {
         'embeds': [
