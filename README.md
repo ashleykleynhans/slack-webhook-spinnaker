@@ -1,5 +1,12 @@
 # Slack Compatible API Webhook Receiver to Send Notifications for Spinnaker
 
+[![Python Version: 3.9](
+https://img.shields.io/badge/Python%20application-v3.9-blue
+)](https://www.python.org/downloads/release/python-3913/)
+[![License: Apache 2.0](
+https://img.shields.io/github/license/ashleykleynhans/slack-webhook-spinnaker?ts=200
+)](https://opensource.org/licenses/GPL-3.0)
+
 ## Supported Notifications
 
 The following platforms are currently supported:
