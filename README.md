@@ -269,7 +269,7 @@ zappa deploy
 ```
 6. Take note of the URL that is returned by the `zappa deploy` command,
 eg. `https://1d602d00.execute-api.us-east-1.amazonaws.com/production`
-   (obviously use your own and don't copy and paate this one, or your
+   (obviously use your own and don't copy and paste this one, or your
 Webhook will not work).
 
 **NOTE:** If you get the following error when running the `zappa deploy` command:
@@ -300,3 +300,7 @@ You should expect the following response:
 ```
 9. Update your Webhook URL in Spinnaker to the one returned by the
 `zappa deploy` command.
+10. You can view your logs by running:
+```bash
+zappa tail
+```
