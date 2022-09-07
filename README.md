@@ -251,10 +251,14 @@ to configure your AWS Lambda deployment:
     "production": {
         "app_function": "spinnaker_webhooks.app",
         "aws_region": "us-east-1",
+        "lambda_description": "Webhook to handle Spinnaker notifications",
         "profile_name": "default",
         "project_name": "spinnaker-webhook",
         "runtime": "python3.9",
-        "s3_bucket": "spinnaker-webhooks"
+        "s3_bucket": "spinnaker-webhooks",
+        "tags": {
+            "service": "spinnaker-webhook"
+        }
     }
 }
 ```
