@@ -98,9 +98,14 @@ def send_discord_notification(channel_id, slack_payload):
 
     bot_url = f'https://discordapp.com/api/channels/{channel_id}/messages'
     discord_bot_token = config['discord']['bot_token']
-    icon_url = 'https://avatars0.githubusercontent.com/u/7634182?s=200&v=4'
-    icon_type = 'Spinnaker'
     embeds = []
+
+    if 'authors' in config['discord'] and 'default' in config['discord']['authors']:
+        icon_url = config['discord']['authors']['default']['icon_url']
+        icon_type = config['discord']['authors']['default']['name']
+    else:
+        icon_url = 'https://avatars0.githubusercontent.com/u/7634182?s=200&v=4'
+        icon_type = 'Spinnaker'
 
     if 'icon_emoji' in slack_payload and 'authors' in config['discord']:
         authors = config['discord']['authors']
