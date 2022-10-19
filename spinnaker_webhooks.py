@@ -98,27 +98,9 @@ def send_discord_notification(channel_id, slack_payload):
 
     bot_url = f'https://discordapp.com/api/channels/{channel_id}/messages'
     discord_bot_token = config['discord']['bot_token']
-    attachment = slack_payload['attachments'][0]
-
-    if 'title' in attachment.keys():
-        title = substitute_hyperlinks(attachment['title'])
-    else:
-        title = ''
-
-    if 'color' in attachment.keys():
-        if attachment['color'] in color_map:
-            color = color_map[attachment['color']]
-        else:
-            color = attachment['color']
-
-        color = color[1:]
-        color = int(color, 16)
-    else:
-        color = None
-
-    description = substitute_hyperlinks(attachment['fallback'], 'markdown')
     icon_url = 'https://avatars0.githubusercontent.com/u/7634182?s=200&v=4'
     icon_type = 'Spinnaker'
+    embeds = []
 
     if 'icon_emoji' in slack_payload and 'authors' in config['discord']:
         authors = config['discord']['authors']
@@ -129,22 +111,41 @@ def send_discord_notification(channel_id, slack_payload):
             icon_url = author['icon_url']
             icon_type = author['name']
 
-    payload = {
-        'embeds': [
-            {
-                'title': title,
-                'type': 'rich',
-                'description': description,
-                'author': {
-                    'name': icon_type,
-                    'icon_url': icon_url
-                }
-            }
-        ]
-    }
+    for attachment in slack_payload['attachments']:
+        if 'title' in attachment.keys():
+            title = substitute_hyperlinks(attachment['title'])
+        else:
+            title = ''
 
-    if color:
-        payload['embeds'][0]['color'] = color
+        embed = {
+            'title': title,
+            'type': 'rich',
+            'description': substitute_hyperlinks(attachment['fallback'], 'markdown'),
+            'author': {
+                'name': icon_type,
+                'icon_url': icon_url
+            }
+        }
+
+        if 'color' in attachment.keys():
+            if attachment['color'] in color_map:
+                color = color_map[attachment['color']]
+            else:
+                color = attachment['color']
+
+            color = color[1:]
+            color = int(color, 16)
+        else:
+            color = None
+
+        if color:
+            embed['color'] = color
+
+        embeds.append(embed)
+
+    payload = {
+        'embeds': embeds
+    }
 
     return requests.post(
         url=bot_url,
@@ -159,15 +160,15 @@ def send_discord_notification(channel_id, slack_payload):
 def send_telegram_notification(chat_id, slack_payload):
     telegram_bot_token = config['telegram']['bot_token']
     bot_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage'
-    attachment = slack_payload['attachments'][0]
     msg_txt = ''
 
-    if 'title' in attachment.keys():
-        title = substitute_hyperlinks(attachment['title'])
-        msg_txt += f'<b>{title}</b>\n'
+    for attachment in slack_payload['attachments']:
+        if 'title' in attachment.keys():
+            title = substitute_hyperlinks(attachment['title'])
+            msg_txt += f'<b>{title}</b>\n'
 
-    text = substitute_hyperlinks(attachment['fallback'])
-    msg_txt += f'{text}'
+        text = substitute_hyperlinks(attachment['fallback'])
+        msg_txt += f'{text}'
 
     return requests.post(
         url=bot_url,
@@ -193,15 +194,15 @@ def send_slack_notification(slack_payload):
 def send_webex_notification(room_id, slack_payload):
     webex_bot_token = config['webex']['bot_token']
     bot_url = 'https://webexapis.com/v1/messages'
-    attachment = slack_payload['attachments'][0]
     msg_txt = ''
 
-    if 'title' in attachment.keys():
-        title = substitute_hyperlinks(attachment['title'], 'markdown')
-        msg_txt += f'**{title}**\n'
+    for attachment in slack_payload['attachments']:
+        if 'title' in attachment.keys():
+            title = substitute_hyperlinks(attachment['title'], 'markdown')
+            msg_txt += f'**{title}**\n'
 
-    text = substitute_hyperlinks(attachment['fallback'], 'markdown')
-    msg_txt += f'{text}'
+        text = substitute_hyperlinks(attachment['fallback'], 'markdown')
+        msg_txt += f'{text}'
 
     return requests.post(
         url=bot_url,
