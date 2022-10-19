@@ -123,10 +123,22 @@ def send_discord_notification(channel_id, slack_payload):
         else:
             title = ''
 
+        if 'fallback' in attachment:
+            description = attachment['fallback']
+        elif 'text' in attachment:
+            description = attachment['text']
+        else:
+            return make_response(jsonify(
+                {
+                    'status': 'error',
+                    'msg': "Neither 'fallback' not 'text' found in the attachment data"
+                }
+            ), 404)
+
         embed = {
             'title': title,
             'type': 'rich',
-            'description': substitute_hyperlinks(attachment['fallback'], 'markdown'),
+            'description': substitute_hyperlinks(description, 'markdown'),
             'author': {
                 'name': icon_type,
                 'icon_url': icon_url
