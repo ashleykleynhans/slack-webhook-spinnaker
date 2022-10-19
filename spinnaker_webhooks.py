@@ -14,6 +14,7 @@ SUPPORTED_PLATFORMS = [
     'webex'
 ]
 
+
 def get_args():
     parser = argparse.ArgumentParser(
         description='Slack Compatible API Webhook Receiver to Send Telegram Notifications'
@@ -239,9 +240,21 @@ def discord_handler():
         ), 404)
 
     slack_payload = request.get_json()
-    slack_channel = slack_payload['channel']
-    # Drop the # prefix from the slack channel
-    slack_channel = slack_channel[1:]
+
+    if 'channel' in slack_payload:
+        slack_channel = slack_payload['channel']
+        # Drop the # prefix from the slack channel
+        slack_channel = slack_channel[1:]
+    elif 'default_channel' in config['slack']:
+        slack_channel = config['slack']['default_channel']
+    else:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': "'default_channel' section not found in 'slack' section of config"
+            }
+        ), 404)
+
     channel_mapping = config['discord']['channel_mapping']
 
     if slack_channel in channel_mapping:
