@@ -17,7 +17,7 @@ SUPPORTED_PLATFORMS = [
 
 def get_args():
     parser = argparse.ArgumentParser(
-        description='Slack Compatible API Webhook Receiver to Send Telegram Notifications'
+        description='Slack Compatible API Webhook Receiver to Send Spinnaker Notifications'
     )
 
     parser.add_argument(
@@ -69,7 +69,33 @@ def substitute_hyperlinks(text, link_format='html'):
     return text
 
 
-def send_discord_notification(channel_id, slack_payload):
+def send_discord_notification(slack_payload):
+    if 'channel' in slack_payload:
+        slack_channel = slack_payload['channel']
+        # Drop the # prefix from the slack channel
+        slack_channel = slack_channel[1:]
+    elif 'default_channel' in config['slack']:
+        slack_channel = config['slack']['default_channel']
+    else:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': "'default_channel' section not found in 'slack' section of config"
+            }
+        ), 404)
+
+    channel_mapping = config['discord']['channel_mapping']
+
+    if slack_channel in channel_mapping:
+        channel_id = channel_mapping[slack_channel]
+    else:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': f'Slack channel {slack_channel} not found in channel_mapping config'
+            }
+        ), 404)
+
     color_map = {
         'green': '#008000',
         'gray': '#808080',
@@ -101,12 +127,23 @@ def send_discord_notification(channel_id, slack_payload):
     discord_bot_token = config['discord']['bot_token']
     embeds = []
 
+    # Global default author
     if 'authors' in config['discord'] and 'default' in config['discord']['authors']:
         icon_url = config['discord']['authors']['default']['icon_url']
         icon_type = config['discord']['authors']['default']['name']
     else:
         icon_url = 'https://avatars0.githubusercontent.com/u/7634182?s=200&v=4'
         icon_type = 'Spinnaker'
+
+    # Channel specific default author
+    if 'authors' in config['discord'] and 'defaults' in config['discord']['authors']:
+        default_authors = config['discord']['authors']['defaults']
+
+        for default_author in default_authors:
+            if default_author['channel'] == slack_channel:
+                icon_url = default_author['icon_url']
+                icon_type = default_author['name']
+                break
 
     if 'icon_emoji' in slack_payload and 'authors' in config['discord']:
         authors = config['discord']['authors']
@@ -252,34 +289,7 @@ def discord_handler():
         ), 404)
 
     slack_payload = request.get_json()
-
-    if 'channel' in slack_payload:
-        slack_channel = slack_payload['channel']
-        # Drop the # prefix from the slack channel
-        slack_channel = slack_channel[1:]
-    elif 'default_channel' in config['slack']:
-        slack_channel = config['slack']['default_channel']
-    else:
-        return make_response(jsonify(
-            {
-                'status': 'error',
-                'msg': "'default_channel' section not found in 'slack' section of config"
-            }
-        ), 404)
-
-    channel_mapping = config['discord']['channel_mapping']
-
-    if slack_channel in channel_mapping:
-        discord_channel_id = channel_mapping[slack_channel]
-    else:
-        return make_response(jsonify(
-            {
-                'status': 'error',
-                'msg': f'Slack channel {slack_channel} not found in channel_mapping config'
-            }
-        ), 404)
-
-    response = send_discord_notification(discord_channel_id, slack_payload)
+    response = send_discord_notification(slack_payload)
     discord_response = response.json()
 
     if response.status_code != 200:
