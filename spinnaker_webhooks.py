@@ -4,6 +4,7 @@ import argparse
 import yaml
 import re
 import requests
+import datetime
 from flask import Flask, request, jsonify, make_response
 
 
@@ -179,7 +180,8 @@ def send_discord_notification(slack_payload):
             'author': {
                 'name': icon_type,
                 'icon_url': icon_url
-            }
+            },
+            'timestamp': datetime.datetime.utcnow().isoformat()
         }
 
         if 'color' in attachment.keys():
