@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+import time
 import yaml
 import re
 import requests
@@ -294,11 +295,17 @@ def discord_handler():
     response = send_discord_notification(slack_payload)
     discord_response = response.json()
 
-    if response.status_code != 200:
+    if response.status_code == 429:
+        retry_after = discord_response['retry_after']
+        print(f'Discord rate limiting is in effect, retrying after {retry_after} seconds')
+        time.sleep(retry_after)
+        response = send_discord_notification(slack_payload)
+        discord_response = response.json()
+    elif response.status_code != 200:
         return make_response(jsonify(
             {
                 'status': 'error',
-                'msg': f'Failed to send Discord notification to channel id: {discord_channel_id}',
+                'msg': f'Failed to send Discord notification, response code: {response.status_code}',
                 'detail': discord_response
             }
         ), 500)
@@ -350,7 +357,13 @@ def telegram_handler():
     response = send_telegram_notification(telegram_chat_id, slack_payload)
     telegram_response = response.json()
 
-    if response.status_code != 200 or not telegram_response['ok']:
+    if response.status_code == 429:
+        retry_after = telegram_response['retry_after']
+        print(f'Telegram rate limiting is in effect, retrying after {retry_after} seconds')
+        time.sleep(retry_after)
+        response = send_telegram_notification(slack_payload)
+        telegram_response = response.json()
+    elif response.status_code != 200 or not telegram_response['ok']:
         return make_response(jsonify(
             {
                 'status': 'error',
