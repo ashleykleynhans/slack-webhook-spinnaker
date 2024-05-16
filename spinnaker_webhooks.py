@@ -6,7 +6,7 @@ import yaml
 import re
 import requests
 import datetime
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, Response
 
 
 SUPPORTED_PLATFORMS = [
@@ -71,20 +71,13 @@ def substitute_hyperlinks(text, link_format='html'):
     return text
 
 
-def send_discord_notification(slack_payload):
+def send_discord_notification(slack_payload, default_channel):
     if 'channel' in slack_payload:
         slack_channel = slack_payload['channel']
         # Drop the # prefix from the slack channel
         slack_channel = slack_channel[1:]
-    elif 'default_channel' in config['slack']:
-        slack_channel = config['slack']['default_channel']
     else:
-        return make_response(jsonify(
-            {
-                'status': 'error',
-                'msg': "'default_channel' section not found in 'slack' section of config"
-            }
-        ), 404)
+        slack_channel = default_channel
 
     channel_mapping = config['discord']['channel_mapping']
 
@@ -291,15 +284,30 @@ def discord_handler():
             }
         ), 404)
 
+    if 'default_channel' not in config['discord']:
+        return make_response(jsonify(
+            {
+                'status': 'error',
+                'msg': "'default_channel' section not found in 'discord' section of config"
+            }
+        ), 404)
+
     slack_payload = request.get_json()
-    response = send_discord_notification(slack_payload)
+    default_channel = request.args.get('channel', config['discord']['default_channel'])
+    response = send_discord_notification(slack_payload, default_channel)
+
+    # Only need to check this once, because it won't generate a 429 HTTP response below
+    # if this happens
+    if isinstance(response, Response):
+        return response
+
     discord_response = response.json()
 
     if response.status_code == 429:
         retry_after = discord_response['retry_after']
         print(f'Discord rate limiting is in effect, retrying after {retry_after} seconds')
         time.sleep(retry_after)
-        response = send_discord_notification(slack_payload)
+        response = send_discord_notification(slack_payload, default_channel)
         discord_response = response.json()
     elif response.status_code != 200:
         return make_response(jsonify(
