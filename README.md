@@ -1,8 +1,8 @@
 # Slack Compatible API Webhook Receiver to Send Notifications for Spinnaker
 
-[![Python Version: 3.9](
-https://img.shields.io/badge/Python%20application-v3.9-blue
-)](https://www.python.org/downloads/release/python-3913/)
+[![Python Version: 3.12](
+https://img.shields.io/badge/Python%20application-v3.12-blue
+)](https://www.python.org/downloads/release/python-3123/)
 [![License: Apache 2.0](
 https://img.shields.io/github/license/ashleykleynhans/slack-webhook-spinnaker?ts=200
 )](https://opensource.org/licenses/GPL-3.0)
@@ -44,19 +44,14 @@ correctly.
 ```bash
 brew install ngrok
 ```
-2. Ensure your System Python3 version is 3.9, but greater than 3.9.1.
+2. Ensure your System Python3 version is 3.12.
 ```bash
 python3 -V
 ```
-3. If your System Python is not 3.9:
+3. If your System Python is not 3.12:
 ```bash
-brew install python@3.9
-brew link python@3.9
-```
-4. If your System Python is 3.9 but not greater than 3.9.1:
-```bash
-brew update
-brew upgrade python@3.9
+brew install python@3.12
+brew link python@3.12
 ```
 
 ### Telegram prerequisites
@@ -231,10 +226,10 @@ that have the bot running within them.
 
 ## Deploy to AWS Lambda
 
-1. Create a Python 3.9 Virtual Environment:
+1. Create a Python 3.12 Virtual Environment:
 ```bash
-python3 -m venv venv/py3.9
-source venv/py3.9/bin/activate
+python3 -m venv venv/py3.12
+source venv/py3.12/bin/activate
 ```
 2. Upgrade pip.
 ```bash
@@ -254,7 +249,7 @@ to configure your AWS Lambda deployment:
         "lambda_description": "Webhook to handle Spinnaker notifications",
         "profile_name": "default",
         "project_name": "spinnaker-webhook",
-        "runtime": "python3.9",
+        "runtime": "python3.12",
         "s3_bucket": "spinnaker-webhooks",
         "tags": {
             "service": "spinnaker-webhook"
