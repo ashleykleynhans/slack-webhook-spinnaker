@@ -294,29 +294,34 @@ def discord_handler():
 
     slack_payload = request.get_json()
     default_channel = request.args.get('channel', config['discord']['default_channel'])
-    response = send_discord_notification(slack_payload, default_channel)
 
-    # Only need to check this once, because it won't generate a 429 HTTP response below
-    # if this happens
-    if isinstance(response, Response):
-        return response
-
-    discord_response = response.json()
-
-    if response.status_code == 429:
-        retry_after = discord_response['retry_after']
-        print(f'Discord rate limiting is in effect, retrying after {retry_after} seconds')
-        time.sleep(retry_after)
+    try:
         response = send_discord_notification(slack_payload, default_channel)
+        response.raise_for_status()
+
+        # Only need to check this once, because it won't generate a 429 HTTP response below
+        # if this happens
+        if isinstance(response, Response):
+            return response
+
         discord_response = response.json()
-    elif response.status_code != 200:
-        return make_response(jsonify(
-            {
-                'status': 'error',
-                'msg': f'Failed to send Discord notification, response code: {response.status_code}',
-                'detail': discord_response
-            }
-        ), 500)
+    except requests.RequestException as e:
+        discord_response = response.json()
+
+        if response.status_code == 429:
+            retry_after = discord_response['retry_after']
+            print(f'Discord rate limiting is in effect, retrying after {retry_after} seconds')
+            time.sleep(retry_after)
+            response = send_discord_notification(slack_payload, default_channel)
+            discord_response = response.json()
+        else:
+            return make_response(jsonify(
+                {
+                    'status': 'error',
+                    'msg': f'Failed to send Discord notification, response code: {response.status_code}',
+                    'detail': discord_response
+                }
+            ), response.status_code)
 
     return jsonify(discord_response)
 
