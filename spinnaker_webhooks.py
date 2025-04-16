@@ -114,8 +114,11 @@ def send_discord_notification(slack_payload, default_channel):
         'navy': '#000080',
         'sienna': '#A0522D',
         'good': '#2EB67D',
+        'resolved': '#2EB67D',
         'warning': '#ECB22E',
         'danger': '#E01E5A',
+        'critical': '#E01E5A',
+        'info': '#36C5F0',
     }
 
     bot_url = f'https://discordapp.com/api/channels/{channel_id}/messages'
