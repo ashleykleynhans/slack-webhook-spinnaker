@@ -1,7 +1,9 @@
 telegram-webhooks/*
 zappa_settings.json
 venv/*
+.venv
 .vscode
 .idea
+.claude
 config.yml
 .DS_Store
